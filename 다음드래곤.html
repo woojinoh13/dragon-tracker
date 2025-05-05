@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>실시간 다음 드래곤 확인기</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background: #111;
+      color: #eee;
+    }
+    #dragon {
+      font-size: 2em;
+      margin-top: 20px;
+      color: #4ef;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐉 실시간 다음 드래곤 정보</h1>
+  <p id="status">WebSocket 연결 중...</p>
+  <div id="dragon">다음 드래곤: 불러오는 중...</div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const dragonEl = document.getElementById("dragon");
+
+    let socket = new WebSocket("wss://push.lolesports.com/socket.io/?EIO=3&transport=websocket");
+
+    socket.onopen = () => {
+      statusEl.textContent = "🟢 연결됨!";
+      socket.send("40[\"connection\"]");
+    };
+
+    socket.onmessage = (event) => {
+      const data = event.data;
+      if (data.startsWith("42")) {
+        try {
+          const [type, payload] = JSON.parse(data.slice(2));
+          if (type === "game_event") {
+            if (payload.eventType === "ANNOUNCED_ANCIENT") {
+              const dragonType = payload.monsterSubType || "???";
+              dragonEl.textContent = `다음 드래곤: ${dragonType.toUpperCase()}`;
+            }
+          }
+        } catch {}
+      }
+    };
+
+    socket.onerror = () => {
+      statusEl.textContent = "❌ 연결 오류 발생";
+    };
+  </script>
+</body>
+</html>
