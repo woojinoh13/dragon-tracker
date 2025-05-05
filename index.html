@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>드래곤 추적기</title>
+    <style>
+        body {
+            background-color: #111;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        .match {
+            background: #222;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px auto;
+            max-width: 500px;
+        }
+        .dragon {
+            font-size: 1.5em;
+            color: #00eaff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐉 실시간 드래곤 정보</h1>
+    <div id="matches">
+        <p>데이터 수신 중...</p>
+    </div>
+
+    <script>
+        const matchContainer = document.getElementById("matches");
+
+        const ws = new WebSocket("wss://feed.lolesports.com/livestats");
+
+        ws.onopen = () => {
+            console.log("WebSocket 연결됨");
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (!data || !data.games) return;
+
+            matchContainer.innerHTML = ""; // 기존 내용 초기화
+
+            data.games.forEach((game) => {
+                const matchDiv = document.createElement("div");
+                matchDiv.classList.add("match");
+
+                const league = game.league ? game.league.name : "알 수 없음";
+                const teams = game.teams ? `${game.teams[0].name} vs ${game.teams[1].name}` : "팀 정보 없음";
+
+                let dragonInfo = "❌ 경기 진행 중 아님";
+                const events = game.events || [];
+                const nextDragon = events.find((e) => e.EventName === "Dragon");
+
+                if (nextDragon) {
+                    const type = nextDragon.DragonType || "Unknown";
+                    dragonInfo = `다음 드래곤: 🐉 ${type}`;
+                }
+
+                matchDiv.innerHTML = `
+                    <h3>${league}</h3>
+                    <p><strong>${teams}</strong></p>
+                    <p class="dragon">${dragonInfo}</p>
+                `;
+
+                matchContainer.appendChild(matchDiv);
+            });
+        };
+
+        ws.onerror = (error) => {
+            matchContainer.innerHTML = "<p style='color: red;'>❌ 연결 오류 발생</p>";
+        };
+    </script>
+</body>
+</html>
